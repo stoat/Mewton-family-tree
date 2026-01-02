@@ -33,10 +33,18 @@ services:
     networks:
       - family-tree
     restart: unless-stopped
+    command: npm start
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 5175 || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 10s
 
   web:
     build:
       context: ../web
+      target: build
       args:
         VITE_API_URL: http://localhost:5175
     container_name: family-tree-web-dev
@@ -46,12 +54,14 @@ services:
       - ../web:/app
       - /app/node_modules
     ports:
-      - "8088:80"
+      - "5173:5173"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - family-tree
     restart: unless-stopped
+    command: npm run dev -- --host 0.0.0.0
 
 volumes:
   tree_data:

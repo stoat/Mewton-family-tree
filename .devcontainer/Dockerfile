@@ -6,13 +6,13 @@ RUN apk add --no-cache \
     curl \
     bash \
     zsh \
-    && addgroup -g 1000 node \
-    && adduser -u 1000 -G node -s /bin/bash -D node
+    build-base \
+    python3
 
 WORKDIR /workspace
 
-# Install pnpm for workspace management (optional but useful)
-RUN npm install -g pnpm
+# Install npm latest and pnpm for workspace management
+RUN npm install -g npm@latest pnpm
 
 USER node
 

@@ -15,14 +15,7 @@
         "GitHub.copilot"
       ],
       "settings": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "[javascript]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "[json]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
-        }
+        "editor.formatOnSave": true
       }
     }
   },
@@ -34,14 +27,14 @@
 
   "postCreateCommand": "npm install --workspaces",
   
-  "forwardPorts": [5175, 8088],
+  "forwardPorts": [5175, 5173],
   "portsAttributes": {
     "5175": {
       "label": "API",
       "onAutoForward": "notify"
     },
-    "8088": {
-      "label": "Web UI",
+    "5173": {
+      "label": "Web UI (Dev)",
       "onAutoForward": "notify"
     }
   },
