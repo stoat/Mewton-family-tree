@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: family-tree-dev
+    volumes:
+      - ../:/workspace:cached
+      - /workspace/node_modules
+      - /workspace/server/node_modules
+      - /workspace/web/node_modules
+    working_dir: /workspace
+    command: sleep infinity
+    networks:
+      - family-tree
+
+  api:
+    build: ../server
+    container_name: family-tree-api-dev
+    environment:
+      - PORT=5175
+      - NODE_ENV=development
+    volumes:
+      - ../server:/app
+      - /app/node_modules
+      - tree_data:/data
+    ports:
+      - "5175:5175"
+    depends_on:
+      - dev
+    networks:
+      - family-tree
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../web
+      args:
+        VITE_API_URL: http://localhost:5175
+    container_name: family-tree-web-dev
+    environment:
+      - VITE_API_URL=http://localhost:5175
+    volumes:
+      - ../web:/app
+      - /app/node_modules
+    ports:
+      - "8088:80"
+    depends_on:
+      - api
+    networks:
+      - family-tree
+    restart: unless-stopped
+
+volumes:
+  tree_data:
+
+networks:
+  family-tree:
+    driver: bridge

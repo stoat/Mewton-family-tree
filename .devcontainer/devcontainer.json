@@ -1,0 +1,50 @@
+{
+  "name": "Family Tree Development",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "mhutchie.git-graph",
+        "ms-azuretools.vscode-docker",
+        "charliermarsh.ruff",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "postCreateCommand": "npm install --workspaces",
+  
+  "forwardPorts": [5175, 8088],
+  "portsAttributes": {
+    "5175": {
+      "label": "API",
+      "onAutoForward": "notify"
+    },
+    "8088": {
+      "label": "Web UI",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "remoteUser": "node"
+}
