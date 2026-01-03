@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -412,10 +412,7 @@ export default function App() {
   const [tree, setTree] = useState({ people: [], relationships: [], meta: { title: "Family Tree" } });
   const [editingPerson, setEditingPerson] = useState(null);
   const [showRelManager, setShowRelManager] = useState(false);
-  const saveTimeoutRef = useCallback(() => {
-    const ref = { id: null };
-    return ref;
-  }, [])();
+  const saveTimeoutRef = useRef(null);
 
   const nodes = useMemo(() => tree.people.map(p => {
     const node = personToNode(p);
@@ -469,8 +466,8 @@ export default function App() {
       const updatedTree = { ...currentTree, people: nextPeople };
       
       // Debounce position saves - only persist every 500ms during drag
-      if (saveTimeoutRef.id) clearTimeout(saveTimeoutRef.id);
-      saveTimeoutRef.id = setTimeout(() => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
         fetch("/api/tree", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -480,7 +477,7 @@ export default function App() {
       
       return updatedTree;
     });
-  }, [saveTimeoutRef]);
+  }, []);
 
   const onEdgesChange = useCallback((changes) => {
     const nextEdges = applyEdgeChanges(changes, edges);
