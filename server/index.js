@@ -8,6 +8,20 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 const PORT = process.env.PORT || 5175;
+const PASSWORD = process.env.TREE_PASSWORD || "password"; // Change in production!
+
+// Simple password verification middleware
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const token = auth.slice(7);
+  if (token !== PASSWORD) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+  next();
+}
 
 // Persist to a volume-mounted folder
 const DATA_DIR = "/data";
@@ -43,11 +57,20 @@ function writeTree(tree) {
   });
 }
 
-app.get("/api/tree", (req, res) => {
+app.post("/api/auth", (req, res) => {
+  const { password } = req.body;
+  if (password === PASSWORD) {
+    res.json({ ok: true, token: PASSWORD });
+  } else {
+    res.status(401).json({ error: "Invalid password" });
+  }
+});
+
+app.get("/api/tree", requireAuth, (req, res) => {
   res.json(readTree());
 });
 
-app.put("/api/tree", (req, res) => {
+app.put("/api/tree", requireAuth, (req, res) => {
   const tree = req.body;
   if (!tree || !Array.isArray(tree.people) || !Array.isArray(tree.relationships)) {
     return res.status(400).json({ error: "Invalid tree shape" });

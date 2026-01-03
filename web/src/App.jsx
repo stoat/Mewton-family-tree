@@ -14,6 +14,109 @@ import { v4 as uuid } from "uuid";
 // Use relative URLs so nginx can proxy to the API
 // This works in both dev and production without hardcoding IPs
 
+function LoginModal({ onLogin }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      
+      if (!res.ok) {
+        setError("Invalid password");
+        setLoading(false);
+        return;
+      }
+      
+      const data = await res.json();
+      onLogin(data.token);
+    } catch (err) {
+      setError("Login failed: " + err.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "#f5f5f5",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 2000
+    }}>
+      <div style={{
+        background: "#fff",
+        borderRadius: "8px",
+        padding: "40px",
+        maxWidth: "400px",
+        width: "90%",
+        boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+      }}>
+        <h1 style={{ marginTop: 0, textAlign: "center" }}>Family Tree</h1>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", fontWeight: "bold", marginBottom: "5px" }}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter password"
+              disabled={loading}
+              autoFocus
+              style={{ 
+                width: "100%", 
+                padding: "10px", 
+                borderRadius: "4px", 
+                border: "1px solid #ccc", 
+                boxSizing: "border-box",
+                fontSize: "16px"
+              }}
+            />
+          </div>
+          
+          {error && (
+            <div style={{ color: "#f44336", marginBottom: "15px", textAlign: "center", fontSize: "14px" }}>
+              {error}
+            </div>
+          )}
+          
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "10px",
+              background: loading ? "#ccc" : "#0066cc",
+              color: "#fff",
+              border: "none",
+              borderRadius: "4px",
+              cursor: loading ? "default" : "pointer",
+              fontWeight: "bold",
+              fontSize: "16px"
+            }}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function PersonNode({ data, isConnectable, onClick }) {
   return (
     <div onClick={onClick} style={{
@@ -412,6 +515,7 @@ export default function App() {
   const [tree, setTree] = useState({ people: [], relationships: [], meta: { title: "Family Tree" } });
   const [editingPerson, setEditingPerson] = useState(null);
   const [showRelManager, setShowRelManager] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem("tree_token"));
   const saveTimeoutRef = useRef(null);
 
   const nodes = useMemo(() => tree.people.map(p => {
@@ -430,26 +534,44 @@ export default function App() {
   }), []);
 
   useEffect(() => {
-    fetch("/api/tree")
-      .then(r => r.json())
-      .then(setTree)
+    if (!token) return;
+    
+    fetch("/api/tree", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+      .then(r => {
+        if (r.status === 401) {
+          setToken(null);
+          localStorage.removeItem("tree_token");
+          return;
+        }
+        return r.json();
+      })
+      .then(data => data && setTree(data))
       .catch(err => console.error("Failed to load tree:", err));
-  }, []);
+  }, [token]);
 
   const persist = useCallback(async (nextTree) => {
+    if (!token) return;
+    
     setTree(nextTree);
     try {
       await fetch("/api/tree", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify(nextTree)
       });
     } catch (err) {
       console.error("Failed to save tree:", err);
     }
-  }, []);
+  }, [token]);
 
   const onNodesChange = useCallback((changes) => {
+    if (!token) return;
+    
     setTree(currentTree => {
       const currentNodes = currentTree.people.map(p => personToNode(p));
       const nextNodes = applyNodeChanges(changes, currentNodes);
@@ -470,14 +592,17 @@ export default function App() {
       saveTimeoutRef.current = setTimeout(() => {
         fetch("/api/tree", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify(updatedTree)
         }).catch(err => console.error("Failed to save positions:", err));
       }, 500);
       
       return updatedTree;
     });
-  }, []);
+  }, [token]);
 
   const onEdgesChange = useCallback((changes) => {
     const nextEdges = applyEdgeChanges(changes, edges);
@@ -544,6 +669,15 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const handleLogin = (newToken) => {
+    setToken(newToken);
+    localStorage.setItem("tree_token", newToken);
+  };
+
+  if (!token) {
+    return <LoginModal onLogin={handleLogin} />;
+  }
+
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -551,8 +685,10 @@ export default function App() {
         <button onClick={addPerson}>Add person</button>
         <button onClick={() => setShowRelManager(true)}>Add relationship</button>
         <button onClick={exportJson}>Export JSON</button>
-        <span style={{ marginLeft: "auto", opacity: 0.7 }}>
+        <button onClick={() => { setToken(null); localStorage.removeItem("tree_token"); }} style={{ marginLeft: "auto", padding: "5px 10px", background: "#f44336", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}>Logout</button>
+        <span style={{ opacity: 0.7 }}>
           Click a person to edit • Drag to move • Delete edges with backspace
+
         </span>
       </div>
 
