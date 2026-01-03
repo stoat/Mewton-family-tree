@@ -37,7 +37,10 @@ function readTree() {
 
 function writeTree(tree) {
   ensureDataFile();
-  fs.writeFileSync(DATA_PATH, JSON.stringify(tree, null, 2), "utf-8");
+  // Use compact JSON for faster writes, write async to not block the response
+  fs.writeFile(DATA_PATH, JSON.stringify(tree), "utf-8", (err) => {
+    if (err) console.error("Error writing tree:", err);
+  });
 }
 
 app.get("/api/tree", (req, res) => {
