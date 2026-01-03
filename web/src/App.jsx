@@ -516,10 +516,12 @@ export default function App() {
       setShowRelManager(false);
       return;
     }
+    console.log("Adding relationship:", newRel);
     const updated = {
       ...tree,
       relationships: [...tree.relationships, newRel]
     };
+    console.log("Updated tree with", updated.relationships.length, "relationships");
     persist(updated);
     setShowRelManager(false);
   };

@@ -52,8 +52,10 @@ app.put("/api/tree", (req, res) => {
   if (!tree || !Array.isArray(tree.people) || !Array.isArray(tree.relationships)) {
     return res.status(400).json({ error: "Invalid tree shape" });
   }
+  
+  // Write immediately but respond right away
   writeTree(tree);
-  res.json({ ok: true });
+  res.json({ ok: true, saved: new Date().toISOString() });
 });
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
