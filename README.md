@@ -138,15 +138,23 @@ The family tree is stored as a single JSON file with three main sections:
 ### Production
 - `API_URL`: Set this when deploying to production with your Pi's IP address
 
-## Local Testing
+## Security
 
-Create a `.env` file in the root for local environment overrides:
+This application includes password protection via the `TREE_PASSWORD` environment variable.
 
-```bash
-API_URL=http://192.168.1.50:5175
-```
+### Default Password (Development)
+Default password is `"password"` for local testing.
 
-(This file should NOT be committed to git - see `.gitignore`)
+### Production Deployment (Portainer)
+When deploying to Portainer on your Raspberry Pi:
+
+1. Go to your stack settings
+2. Add an environment variable:
+   - **Variable name:** `TREE_PASSWORD`
+   - **Value:** Your desired password
+3. Redeploy the stack
+
+The password will be used for all login attempts. Users must enter this password to access the family tree.
 
 ## Persisting Data
 

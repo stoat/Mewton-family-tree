@@ -4,6 +4,7 @@ services:
     container_name: family-tree-api
     environment:
       - PORT=5175
+      - TREE_PASSWORD=${TREE_PASSWORD:-password}
     volumes:
       - tree_data:/data
     ports:
