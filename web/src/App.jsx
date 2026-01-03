@@ -126,13 +126,15 @@ function PersonNode({ data, isConnectable, onClick }) {
       borderRadius: "8px",
       fontSize: "14px",
       minWidth: "100px",
+      width: "auto",
       textAlign: "center",
       cursor: "pointer",
-      transition: "all 0.2s"
+      transition: "all 0.2s",
+      whiteSpace: "nowrap"
     }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 0 8px rgba(0,0,0,0.3)"} onMouseLeave={(e) => e.currentTarget.style.boxShadow = "none"}>
       <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
-      <div style={{ fontWeight: "bold" }}>{data.displayName}</div>
-      {data.birth && <div style={{ fontSize: "12px", opacity: 0.7 }}>b. {data.birth}</div>}
+      <div style={{ fontWeight: "bold", display: "block" }}>{data.displayName}</div>
+      {data.birth && <div style={{ fontSize: "12px", opacity: 0.7, display: "block" }}>b. {data.birth}</div>}
       <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />
     </div>
   );
@@ -357,8 +359,7 @@ function PersonSearch({ value, onChange, tree, excludeId }) {
               style={{
                 padding: "10px",
                 cursor: "pointer",
-                borderBottom: "1px solid #eee",
-                hover: { background: "#f5f5f5" }
+                borderBottom: "1px solid #eee"
               }}
               onMouseEnter={e => e.currentTarget.style.background = "#f5f5f5"}
               onMouseLeave={e => e.currentTarget.style.background = "#fff"}
@@ -492,7 +493,14 @@ function personToNode(p) {
     id: p.id,
     position: { x: p.x ?? 0, y: p.y ?? 0 },
     data: { ...p },
-    type: "person"
+    type: "person",
+    style: {
+      width: "140px",
+      height: "auto",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
   };
 }
 
@@ -693,7 +701,7 @@ export default function App() {
       </div>
 
       <div style={{ flex: 1, display: "flex" }}>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, position: "relative", width: "100%", height: "100%", minHeight: 0 }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -702,6 +710,9 @@ export default function App() {
             nodeTypes={nodeTypes}
             nodesDraggable={true}
             fitView
+            panOnScroll={true}
+            panOnDrag={true}
+            proOptions={{ hideAttribution: true }}
           >
             <Background />
             <MiniMap />
