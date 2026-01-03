@@ -11,7 +11,8 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { v4 as uuid } from "uuid";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5175";
+// Use relative URLs so nginx can proxy to the API
+// This works in both dev and production without hardcoding IPs
 
 function PersonNode({ data, isConnectable, onClick }) {
   return (
@@ -411,6 +412,10 @@ export default function App() {
   const [tree, setTree] = useState({ people: [], relationships: [], meta: { title: "Family Tree" } });
   const [editingPerson, setEditingPerson] = useState(null);
   const [showRelManager, setShowRelManager] = useState(false);
+  const saveTimeoutRef = useCallback(() => {
+    const ref = { id: null };
+    return ref;
+  }, [])();
 
   const nodes = useMemo(() => tree.people.map(p => {
     const node = personToNode(p);
@@ -428,21 +433,23 @@ export default function App() {
   }), []);
 
   useEffect(() => {
-    fetch(`${API}/api/tree`)
+    fetch("/api/tree")
       .then(r => r.json())
       .then(setTree)
-      .catch(() => {});
+      .catch(err => console.error("Failed to load tree:", err));
   }, []);
 
   const persist = useCallback(async (nextTree) => {
     setTree(nextTree);
     try {
-      await fetch(`${API}/api/tree`, {
+      await fetch("/api/tree", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nextTree)
       });
-    } catch {}
+    } catch (err) {
+      console.error("Failed to save tree:", err);
+    }
   }, []);
 
   const onNodesChange = useCallback((changes) => {
@@ -460,16 +467,20 @@ export default function App() {
       }).filter(Boolean);
       
       const updatedTree = { ...currentTree, people: nextPeople };
-      // Persist in background, don't wait
-      fetch(`${API}/api/tree`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedTree)
-      }).catch(err => console.error("Failed to save positions:", err));
+      
+      // Debounce position saves - only persist every 500ms during drag
+      if (saveTimeoutRef.id) clearTimeout(saveTimeoutRef.id);
+      saveTimeoutRef.id = setTimeout(() => {
+        fetch("/api/tree", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedTree)
+        }).catch(err => console.error("Failed to save positions:", err));
+      }, 500);
       
       return updatedTree;
     });
-  }, []);
+  }, [saveTimeoutRef]);
 
   const onEdgesChange = useCallback((changes) => {
     const nextEdges = applyEdgeChanges(changes, edges);

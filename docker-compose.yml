@@ -20,8 +20,6 @@ services:
     build:
       context: ./web
       target: serve
-      args:
-        VITE_API_URL: ${API_URL:-http://localhost:5175}
     container_name: family-tree-web
     ports:
       - "80:80"
